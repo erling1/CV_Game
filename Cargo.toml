@@ -1,0 +1,9 @@
+[package]
+name = "CVGame"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+macroquad-particles = "0.2.2"
+macroquad = { version = "0.4", features = ["audio"] }
+web-sys = "0.3.83"
