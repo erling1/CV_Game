@@ -2,6 +2,7 @@ use macroquad::prelude::*;
 use macroquad::experimental::animation::{AnimatedSprite, Animation};
 use macroquad::audio::{load_sound, play_sound, play_sound_once, PlaySoundParams};
 use crate::miniquad::window;
+use macroquad::ui::{hash, root_ui, Skin};
 
 const FRAGMENT_SHADER: &str = include_str!("starfield-shader.glsl");
 
@@ -67,7 +68,7 @@ enum GameState {
 #[macroquad::main("CV Game ")]
 async fn main() {
     
-    //loading in images to use in gme 
+    //loading in textures to use in game 
     set_pc_assets_folder("assets");
     let coffee_cup_texture: Texture2D = load_texture("coffee_cup.png").await.expect("Couldn't load coffe cup png file");
     coffee_cup_texture.set_filter(FilterMode::Nearest);
@@ -77,6 +78,80 @@ async fn main() {
 
     build_textures_atlas();
 
+
+    //load images to use for menues and define button and window style  
+    let window_background = load_image("main_menu_background_creative_commons.png").await.expect("Couldnt load main menu background file");
+    let button_background = load_image("button_background.png").await.expect("Couldnt load button background file");
+    let button_clicked_background = load_image("button_clicked_background.png").await.expect("Couldnt load button clicked background file");
+    let button_hovered_background = load_image("button_hovered_background.png").await.expect("Couldnt load button hovered background file");
+
+    let see_cv_button_background = load_image("button_hovered_background.png").await.expect("Couldnt load button hovered background file");
+    let gamewon_menu_background = load_image("button_hovered_background.png").await.expect("Couldnt load button hovered background file");
+
+
+
+    let font = load_file("atari_games.ttf").await.expect("Couldnt load font file");
+
+    let window_style = root_ui()
+        .style_builder()
+        .background(window_background)
+        .background_margin(RectOffset::new(32.0, 76.0, 44.0, 20.0))
+        .margin(RectOffset::new(0.0, -40.0, 0.0, 0.0)) 
+        .build();
+
+    let button_style = root_ui()
+        .style_builder()
+        .background(button_background)
+        .background_hovered(button_hovered_background)
+        .background_clicked(button_clicked_background)
+        .background_margin(RectOffset::new(16.0, 16.0, 16.0, 16.0))
+        .margin(RectOffset::new(16.0, 0.0, -8.0, -8.0))
+        .font(&font)
+        .expect("Failed creating button style")
+        .text_color(WHITE)
+        .font_size(64)
+        .build();
+    
+    let see_cv_button_style = root_ui()
+        .style_builder()
+        .background(button_background)
+        .background_hovered(button_hovered_background)
+        .background_clicked(button_clicked_background)
+        .background_margin(RectOffset::new(16.0, 16.0, 16.0, 16.0))
+        .margin(RectOffset::new(16.0, 0.0, -8.0, -8.0))
+        .font(&font)
+        .expect("Failed creating button style")
+        .text_color(WHITE)
+        .font_size(64)
+        .build();
+    
+
+
+
+    let label_style = root_ui()
+        .style_builder()
+        .font(&font)
+        .expect("Failed creating label style")
+        .text_color(WHITE)
+        .font_size(28)
+        .build();
+
+    let ui_skin = Skin {
+        window_style,
+        button_style,
+        label_style,
+        ..root_ui().default_skin()
+    };
+
+    let gamewon_skin = Skin {
+        window_style,
+        see_cv_button_style,
+        label_style,
+        ..root_ui().default_skin()
+    };
+
+    root_ui().push_skin(&ui_skin);
+    let window_size = vec2(screen_width() * 0.7, screen_height() * 0.7);
 
     //loading soud effects, these would be nice if they could be custom
     let theme_music = load_sound("8bit-spaceshooter.ogg").await.expect("Could not load theme music file");
@@ -165,29 +240,39 @@ async fn main() {
         match game_state {
             GameState::MainMenu => {
 
-                if is_key_pressed(KeyCode::Escape) {
-                    std::process::exit(0);
-                }
+                //let button_width = window_size * 0.3;
+                //let button_height = button_width * 0.25;
+                let window_size_menu = vec2(screen_width() * 0.7, screen_height() * 0.7);
+                let window_width = window_size_menu.x;
+                let window_height = window_size_menu.y;
+                
+                let deploy_button_pos = vec2(window_width * 0.1, window_height / 2.0 - 40.0);
+                let quit_button_pos = vec2(window_width * 0.1, window_height / 2.0 + 40.0);
 
-                if is_key_pressed(KeyCode::Space) {
-                    squares.clear();
-                    bullets.clear();
-                    circle.x = screen_width() / 2.0;
-                    circle.y = screen_height() / 2.0;
-                    //score = 0; todo will use cv collectables instead 
-                    game_state = GameState::Playing;
-                }
 
-                let text = "Press Space";
-                let text_dimensions = measure_text(text, None, 50, 1.0);
-                draw_text(
-                    text,
-                    screen_width() / 2.0 - text_dimensions.width / 2.0,
-                    screen_height() / 2.0,
-                    50.0,
-                    WHITE,
+                root_ui().window(
+                    hash!(),
+                    vec2(
+                        screen_width() / 2.0 - window_size.x / 2.0,
+                        screen_height() / 2.0 - window_size.y / 2.0,
+                    ),
+                    window_size_menu,
+                    |ui| {
+                        ui.label(vec2(80.0, -34.0), "Main Menu");
+                        if ui.button(deploy_button_pos, "DEPLOY") {
+                            squares.clear();
+                            bullets.clear();
+                            //todo explosions.clear();
+                            circle.x = screen_width() / 2.0;
+                            circle.y = screen_height() / 2.0;
+                            mcguffin_score = 0; // dont need this yet, but it would be nice to implmenet a history of scorse and so on 
+                            game_state = GameState::Playing;
+                        }
+                        if ui.button(quit_button_pos, "Send me back to my cubicle") {
+                            std::process::exit(0);
+                        }
+                    },
                 );
-
             },
 
             GameState::Playing => {
@@ -403,6 +488,10 @@ async fn main() {
             },
 
             GameState::GameWon => {
+
+
+
+
                 if is_key_pressed(KeyCode::Space) {
                     game_state = GameState::MainMenu
                 }
@@ -415,6 +504,39 @@ async fn main() {
                     screen_height() / 2.0,
                     50.0,
                     GREEN,
+                );
+
+                    
+                let window_size_menu = vec2(screen_width() * 0.7, screen_height() * 0.7);
+                let window_width = window_size_menu.x;
+                let window_height = window_size_menu.y;
+                
+                let deploy_button_pos = vec2(window_width * 0.1, window_height / 2.0 - 40.0);
+                let quit_button_pos = vec2(window_width * 0.1, window_height / 2.0 + 40.0);
+
+
+
+                root_ui().window(
+                    hash!(),
+                    vec2(
+                        screen_width() / 2.0 - window_size.x / 2.0,
+                        screen_height() / 2.0 - window_size.y / 2.0,
+                    ),
+                    window_size_menu,
+                    |ui| {
+                        ui.label(vec2(80.0, -34.0), "Game Won");
+                        if ui.button(see_CV_button_pos, "See CV") {
+                            squares.clear();
+                            bullets.clear();
+                            //todo explosions.clear();
+                            circle.x = screen_width() / 2.0;
+                            circle.y = screen_height() / 2.0;
+                            mcguffin_score = 0; // dont need this yet, but it would be nice to implmenet a history of scorse and so on 
+                         // let _ = win.open_with_url("https://.html");
+
+                            //std::process::exit(0); not sure i                              
+                        }
+                    },
                 );
                
                 //todo: integrate a simple cv in my kubernetes api 
